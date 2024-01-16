@@ -4,17 +4,20 @@ from enum import Enum
 import trimesh
 
 class Directions(Enum):
-    FRONT = 0,      np.array([255, 0, 0, 255])   # phi \in [-front/2, front/2)
-    SIDE_LEFT = 1,  np.array([0, 255, 0, 255])   # phi \in [front/2, 180-front/2)
-    BACK = 2,       np.array([0, 0, 255, 255])   # phi \in [180-front/2, 180+front/2)
-    SIDE_RIGHT = 3, np.array([255, 255, 0, 255]) # phi \in [180+front/2, 360-front/2)
-    TOP = 4,        np.array([255, 0, 255, 255]) # theta \in [0, overhead]
-    BOTTOM = 5,     np.array([0, 255, 255, 255]) # theta \in [180-overhead, 180]
+    FRONT = 0,      np.array([255, 0, 0, 255]),   'front'      # phi \in [-front/2, front/2)
+    SIDE_LEFT = 1,  np.array([0, 255, 0, 255]),   'side'       # phi \in [front/2, 180-front/2)
+    BACK = 2,       np.array([0, 0, 255, 255]),   'back'       # phi \in [180-front/2, 180+front/2)
+    SIDE_RIGHT = 3, np.array([255, 255, 0, 255]), 'side'     # phi \in [180+front/2, 360-front/2)
+    TOP = 4,        np.array([255, 0, 255, 255]), 'overhead' # theta \in [0, overhead]
+    BOTTOM = 5,     np.array([0, 255, 255, 255]), 'bottom'  # theta \in [180-overhead, 180]
     def __int__(self):
         return self.value[0]
     
     def get_color(self):
         return self.value[1]
+    
+    def __str__(self):
+        return self.value[2]
 
 def normalize(x):
     return x / torch.sqrt(torch.sum(x**2, keepdim=True, dim=-1))
@@ -122,3 +125,15 @@ def visualize_rays(origins, directions, size = 0.1):
         objects.append(segs)
 
     trimesh.Scene(objects).show(viewer='gl')
+
+def generate_all_rays(size, H, W, focal):
+    poses, dirs = generate_random_poses(size)
+    directions = get_ray_directions(H, W, focal)
+    all_rays = []
+
+    for pose in poses:
+        origin, direction = get_rays(directions, pose)
+        all_rays += [torch.cat([origin, direction], 1)]
+    all_rays = torch.cat(all_rays, 0)
+
+    return all_rays, dirs
