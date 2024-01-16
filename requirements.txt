@@ -1,0 +1,10 @@
+ipykernel
+numpy
+torch
+diffusers
+matplotlib
+torchvision
+transformers
+toolz
+kornia
+rich
