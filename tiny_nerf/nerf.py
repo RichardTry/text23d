@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from utils.blender import BlenderDataset
+#from utils.blender import BlenderDataset
 from rich.progress import Progress
 import os
 from rich.console import Console
@@ -127,7 +127,7 @@ def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=1
     return c + 1 - weight_sum.unsqueeze(-1)
 
 
-def train(nerf_model, optimizer, scheduler, data_loader, testing_dataset, device='cpu', hn=0, hf=1, nb_epochs=int(1e5),
+def train(batch_size, nerf_model, optimizer, scheduler, data_loader, guidance, device='cpu', hn=0, hf=1, nb_epochs=int(1e5),
           nb_bins=192, H=400, W=400):
     model_save_path = "model_saved.pt"
     training_loss = []
@@ -146,12 +146,12 @@ def train(nerf_model, optimizer, scheduler, data_loader, testing_dataset, device
                     
                     ray_origins = batch["rays"][:, :3].to(device)
                     ray_directions = batch["rays"][:, 3:6].to(device)
-                    ground_truth_px_values = batch["rgbs"].to(device)
+                    concrete_directions = batch["dirs"].to(device)
                     
                     regenerated_px_values = render_rays(nerf_model, ray_origins, ray_directions, hn=hn, hf=hf, nb_bins=nb_bins) 
-                    
-                    loss = ((ground_truth_px_values - regenerated_px_values) ** 2).sum()
-
+                
+                    #loss = ((ground_truth_px_values - regenerated_px_values) ** 2).sum()
+                    loss = guidance.calculate_loss(regenerated_px_values, batch_size, H, W, concrete_directions)
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
@@ -161,39 +161,6 @@ def train(nerf_model, optimizer, scheduler, data_loader, testing_dataset, device
                 progress.update(epochs_task, advance=1)
             torch.save(nerf_model.state_dict(), model_save_path)
        
-    for img_index in range(200):
-        test(nerf_model, hn, hf, testing_dataset, chunk_size=1024, img_index=img_index, nb_bins=nb_bins, H=H, W=W)
+    #for img_index in range(200):
+    #    test(nerf_model, hn, hf, testing_dataset, chunk_size=1024, img_index=img_index, nb_bins=nb_bins, H=H, W=W)
     return training_loss
-
-
-if __name__ == '__main__':
-    console.print(":film_projector: [bold green] Welcome to Tiny NeRF :film_projector:")
-    device = 'cpu'
-    height = width = 400 # The dimesions have to be the same for h and w. Original images are 800x800
-    # The smaller the images the faster the training and evaluation
-    batch_size = 1024 * 4 # If running out of memory reduce this
-    data_location = "/home/kolek/Edu/project/tiny-nerf/nerf_synthetic/lego"
-    max_frames = 10 # Maximum number of images to train with. Lower this to speed up training
-    nb_epochs = 3
-
-    console.print(f"Using {max_frames} images and running for {nb_epochs} epochs")
-
-    training_dataset = BlenderDataset(data_location,split="train", max_frames=max_frames, img_wh=(height, width))
-    testing_dataset = BlenderDataset(data_location,split="val", img_wh=(height, width))
-
-    model = NerfModel(hidden_dim=256).to(device)
-    model_optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(model_optimizer, milestones=[2, 4, 8], gamma=0.5)
-    data_loader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
-    train(model, 
-          model_optimizer, 
-          scheduler, 
-          data_loader, 
-          testing_dataset, 
-          nb_epochs=nb_epochs, 
-          device=device, 
-          hn=2, 
-          hf=6, 
-          nb_bins=192, 
-          H=height,
-          W=width)

@@ -4,13 +4,14 @@ import torch.nn.functional as F
 
 
 class StableDiffusionGuidance():
-    def __init__(self):
+    def __init__(self, prompt):
         self.model_key = "stabilityai/stable-diffusion-2-1-base"
         self.torch_device = 'cpu'
         pipe = StableDiffusionPipeline.from_pretrained(self.model_key, torch_dtype=torch.float32)
         pipe.to(self.torch_device)
         self.vae = pipe.vae
         self.tokenizer = pipe.tokenizer
+        self.text_encoder = pipe.text_encoder
         self.unet = pipe.unet
         self.scheduler = DDIMScheduler.from_pretrained(self.model_key, subfolder="scheduler", torch_dtype=torch.float32)
         # from paper
@@ -21,8 +22,9 @@ class StableDiffusionGuidance():
         self.text_embeddings = {}
         self.directions = ['front', 'side', 'back', 'bottom', 'overhead']
         self.alphas = self.scheduler.alphas_cumprod.to(self.torch_device)
+        self.create_text_embedding_dict(prompt)
 
-    def calculate_loss(self, generated_render, batch_size, H, W, text_embeddings, guidance_scale=100, grad_scale=1):
+    def calculate_loss(self, generated_render, batch_size, H, W, concrete_directions, guidance_scale=100, grad_scale=1):
         generated_render = generated_render.reshape(batch_size, H, W, 3).permute(0, 3, 1, 2)
         generated_render_i512 = F.interpolate(generated_render, (512, 512), mode='bilinear', align_corners=False)
 
@@ -44,7 +46,7 @@ class StableDiffusionGuidance():
             latent_model_input = torch.cat([latents_noisy] * 2)
             tt = torch.cat([t] * 2)
             # map directions to the text prompt
-            #text_embeddings = self.map_directions_to_text_embeddings(dirs)
+            text_embeddings = self.map_directions_to_text_embeddings(concrete_directions)
             noise_pred = self.unet(latent_model_input, tt, encoder_hidden_states=text_embeddings).sample
 
             # perform guidance, guidance in paper was around 100

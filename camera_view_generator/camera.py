@@ -2,6 +2,12 @@ import torch
 import numpy as np
 from enum import Enum
 import trimesh
+import sys
+sys.path.append("..") 
+from tiny_nerf.utils.ray_utils import get_ray_directions, get_rays
+import numpy as np
+
+from torch.utils.data import Dataset
 
 class Directions(Enum):
     FRONT = 0,      np.array([255, 0, 0, 255]),   'front'      # phi \in [-front/2, front/2)
@@ -137,3 +143,23 @@ def generate_all_rays(size, H, W, focal):
     all_rays = torch.cat(all_rays, 0)
 
     return all_rays, dirs
+
+class CameraDataset(Dataset):
+    def __init__(self, label="default", H=64, W=64, samples=0):
+        self.label = label
+        self.samples = samples
+        self.H = H
+        self.W = W
+        self.default_fov = 20
+        self.focal = self.H / (2 * np.tan(np.deg2rad(self.default_fov) / 2))
+
+        self.allrays, self.directions = generate_all_rays(self.samples, self.H, self.W, self.focal)
+
+        self.allrays = self.allrays.reshape(samples, H * W, 6)
+    def __len__(self):
+        return self.samples
+    def __getitem__(self, idx):
+        return {
+            'rays': self.allrays[idx],
+            'dirs': int(self.directions[idx])
+        }
