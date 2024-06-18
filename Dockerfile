@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 
 FROM python:3.10-bullseye
+COPY heavy_requirements.txt heavy_requirements.txt
 COPY requirements.txt requirements.txt
+RUN pip install -r heavy_requirements.txt
 RUN pip install -r requirements.txt
 
 WORKDIR /app
