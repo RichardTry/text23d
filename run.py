@@ -1,3 +1,4 @@
+import asyncio
 import torch
 from rich.console import Console
 from torch.utils.data import DataLoader
@@ -12,10 +13,11 @@ from tiny_nerf.nerf import NerfModel, train
 console = Console()
 
 
-if __name__ == "__main__":
+async def run(prompt: str):
     console.print(
         ":film_projector: [bold green] Welcome to Tiny DreamFusion :film_projector:"
     )
+    print(f"Training {prompt}...")
     device = "cpu"
     height = width = 64
     # The smaller the images the faster the training and evaluation
@@ -24,7 +26,6 @@ if __name__ == "__main__":
         10  # Maximum number of images to train with. Lower this to speed up training
     )
     nb_epochs = 3
-    prompt = "Delicious hamburger"
     console.print(f"Using {max_frames} images and running for {nb_epochs} epochs")
 
     training_dataset = CameraDataset(label="train", samples=128)
@@ -52,3 +53,6 @@ if __name__ == "__main__":
         H=height,
         W=width,
     )
+
+if __name__ == "__main__":
+    asyncio.run(run('Delicious hamburger'))
