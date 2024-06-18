@@ -6,7 +6,7 @@ from diffusers import DDIMScheduler, StableDiffusionPipeline
 class StableDiffusionGuidance:
     def __init__(self, prompt):
         self.model_key = "stabilityai/stable-diffusion-2-1-base"
-        self.torch_device = "cpu"
+        self.torch_device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = StableDiffusionPipeline.from_pretrained(
             self.model_key, torch_dtype=torch.float32
         )
