@@ -200,7 +200,7 @@ def train(
                 progress.update(
                     epochs_task, description=f"[red]Epoch {epoch_idx}/{nb_epochs}"
                 )
-                batch_task = progress.add_task("[green]Batcd", total=len(data_loader))
+                batch_task = progress.add_task("[green]Batch", total=len(data_loader))
 
                 for idx, batch in enumerate(data_loader):
                     ray_origins = batch["rays"][:, :3].to(device)
