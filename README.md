@@ -38,5 +38,5 @@ pip install -r heavy_requirements.txt
 #### Run the project
 
 ```
-python3 main.py
+python run.py
 ```
