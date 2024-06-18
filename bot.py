@@ -16,14 +16,14 @@ dp = Dispatcher()
 @dp.message(F.text, CommandStart())
 async def start(message: Message):
 	await bot.send_message(chat_id=message.chat.id,
-						   text=f'Введи текст, чтобы начать обучение.',
+						   text=f'Этот бот генерирует 3D сцену (облако точек) из текстового описания. Введите текст, чтобы начать обучение.',
 						   parse_mode=ParseMode.HTML)
 
 @dp.message(F.text)
 async def start(message: Message):
 	asyncio.create_task(run(message.text))
 	await bot.send_message(chat_id=message.chat.id,
-						   text=f"Обучение начато: {message.text}",
+						   text=f"Началось обучение: {message.text}",
 						   parse_mode=ParseMode.HTML)
 
 async def main():
