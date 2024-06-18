@@ -3,9 +3,9 @@
 ## Install project
 
 ```
-git clone https://github.com/RichardTry/text-to-3d.git
+git clone https://github.com/RichardTry/text23d
 
-cd text-to-3d
+cd text23d
 ```
 
 ## Create environment
