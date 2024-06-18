@@ -93,6 +93,7 @@ class NerfModel(nn.Module):
 
     @staticmethod
     def positional_encoding(x, L):
+        print('NerfModel positional_encoding')
         out = [x]
         for j in range(L):
             out.append(torch.sin(2**j * x))
@@ -100,6 +101,7 @@ class NerfModel(nn.Module):
         return torch.cat(out, dim=1)
 
     def forward(self, o, d):
+        print('NerfModel forward')
         emb_x = self.positional_encoding(
             o, self.embedding_dim_pos
         )  # emb_x: [batch_size, embedding_dim_pos * 6]
@@ -107,6 +109,7 @@ class NerfModel(nn.Module):
             d, self.embedding_dim_direction
         )  # emb_d: [batch_size, embedding_dim_direction * 6]
         h = self.block1(emb_x)  # h: [batch_size, hidden_dim]
+        print('TUUUUUUT')
         tmp = self.block2(
             torch.cat((h, emb_x), dim=1)
         )  # tmp: [batch_size, hidden_dim + 1]
@@ -132,15 +135,29 @@ def compute_accumulated_transmittance(alphas):
 def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=192):
     device = ray_origins.device
 
+    # print(ray_origins.shape)
+    # print('squizeeng...')
+
+    ray_origins = ray_origins.view(-1, ray_origins.size(-1))
+
+    # print(ray_origins.shape)
+    # print(ray_directions.shape)
+    # print('squizeeng...')
+    ray_directions = ray_directions.view(-1, ray_directions.size(-1))
+    # print(ray_directions.shape)
+
     t = torch.linspace(hn, hf, nb_bins, device=device).expand(
         ray_origins.shape[0], nb_bins
     )
+    # print(t.shape)
+
     # Perturb sampling along each ray.
     mid = (t[:, :-1] + t[:, 1:]) / 2.0
     lower = torch.cat((t[:, :1], mid), -1)
     upper = torch.cat((mid, t[:, -1:]), -1)
     u = torch.rand(t.shape, device=device)
     t = lower + (upper - lower) * u  # [batch_size, nb_bins]
+    # print('>>>>', t.shape)
     delta = torch.cat(
         (
             t[:, 1:] - t[:, :-1],
@@ -150,22 +167,27 @@ def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=1
     )
 
     # Compute the 3D points along each ray
-    x = ray_origins.unsqueeze(1) + t.unsqueeze(2) * ray_directions.unsqueeze(
-        1
-    )  # [batch_size, nb_bins, 3]
+    # print(ray_directions.unsqueeze(1).shape)
+    # print(t.unsqueeze(2).shape)
+    vecs = t.unsqueeze(2) * ray_directions.unsqueeze(1)
+    x = ray_origins.unsqueeze(1) + vecs  # [batch_size, nb_bins, 3]
     # Expand the ray_directions tensor to match the shape of x
     ray_directions = ray_directions.expand(nb_bins, ray_directions.shape[0], 3).transpose(
         0, 1
     )
-
+    print('HERE 1')
+    print(x.reshape(-1, 3).shape, ray_directions.reshape(-1, 3).shape)
     colors, sigma = nerf_model(x.reshape(-1, 3), ray_directions.reshape(-1, 3))
+    print('HERE 1.2')
     colors = colors.reshape(x.shape)
+    print('HERE 1.3')
     sigma = sigma.reshape(x.shape[:-1])
-
+    print('HERE 2')
     alpha = 1 - torch.exp(-sigma * delta)  # [batch_size, nb_bins]
     weights = compute_accumulated_transmittance(1 - alpha).unsqueeze(2) * alpha.unsqueeze(
         2
     )
+    print('HERE 3')
     # Compute the pixel values as a weighted sum of colors along each ray
     c = (weights * colors).sum(dim=1)
     weight_sum = weights.sum(-1).sum(-1)  # Regularization for white background
@@ -203,8 +225,11 @@ def train(
                 batch_task = progress.add_task("[green]Batch", total=len(data_loader))
 
                 for idx, batch in enumerate(data_loader):
-                    ray_origins = batch["rays"][:, :3].to(device)
-                    ray_directions = batch["rays"][:, 3:6].to(device)
+                    #print('rays shape', batch['rays'].shape)
+                    ray_origins = batch["rays"][:, :, :3].to(device)
+                    #print('origins', ray_origins.shape)
+                    ray_directions = batch["rays"][:, :, 3:6].to(device)
+                    #print('directions', ray_directions.shape)
                     concrete_directions = batch["dirs"].to(device)
 
                     regenerated_px_values = render_rays(
