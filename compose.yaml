@@ -1,5 +1,5 @@
 services:
   bot:
-    build: src/
+    build: .
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
