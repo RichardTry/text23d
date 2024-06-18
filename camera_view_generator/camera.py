@@ -159,7 +159,7 @@ def visualize_rays(origins, directions, size=0.1):
 
 def generate_all_rays(size, H, W, focal):
     poses, dirs = generate_random_poses(size)
-    directions = get_ray_directions(H, W, focal)
+    directions = get_ray_directions(H, W, focal) # Returns [[h1, w1, -1], [h2, w2, -1], ...]
     all_rays = []
 
     for pose in poses:
