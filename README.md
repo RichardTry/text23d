@@ -11,8 +11,8 @@ cd text-to-3d
 ## Create environment
 
 ```
-python -m venv venv_text_to_3d
-source venv_text_to_3d/bin/activate
+python -m venv venv
+source venv/bin/activate
 ```
 
 ## Install requirements
