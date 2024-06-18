@@ -109,10 +109,11 @@ class NerfModel(nn.Module):
             d, self.embedding_dim_direction
         )  # emb_d: [batch_size, embedding_dim_direction * 6]
         h = self.block1(emb_x)  # h: [batch_size, hidden_dim]
-        print('TUUUUUUT')
+        print('TUUUUUUT 11111')
         tmp = self.block2(
             torch.cat((h, emb_x), dim=1)
         )  # tmp: [batch_size, hidden_dim + 1]
+        print('TUUUUUUT 22222')
         h, sigma = tmp[:, :-1], self.relu(
             tmp[:, -1]
         )  # h: [batch_size, hidden_dim], sigma: [batch_size]
