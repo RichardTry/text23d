@@ -24,7 +24,8 @@ class StableDiffusionGuidance:
         self.min_step = int(self.num_train_timesteps * self.t_range[0])
         self.max_step = int(self.num_train_timesteps * self.t_range[1])
         self.text_embeddings = {}
-        self.directions = ["front", "side", "back", "bottom", "overhead"]
+        # self.directions = ["front", "side", "back", "bottom", "overhead"]
+        self.directions = ["0", "1", "2", "3", "4", "5"]
         self.alphas = self.scheduler.alphas_cumprod.to(self.torch_device)
         self.create_text_embedding_dict(prompt)
 
@@ -118,7 +119,7 @@ class StableDiffusionGuidance:
             )[0]
 
     def map_directions_to_text_embeddings(self, directions):
-        cond_embeddings = [self.text_embeddings[str(dir)] for dir in directions]
+        cond_embeddings = [self.text_embeddings[str(dir.item())] for dir in directions]
         cond_embeddings = torch.cat(cond_embeddings, 0)
         uncond_embeddings = [
             self.text_embeddings["unconditional"] for _ in range(len(directions))
