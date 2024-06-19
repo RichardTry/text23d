@@ -32,8 +32,8 @@ source venv/bin/activate
 
 ```
 pip install -r requirements.txt
-pip install -r heavy_requirements.txt
 ```
+~~`pip install -r heavy_requirements.txt`~~
 
 #### Run the project
 
