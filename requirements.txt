@@ -1,1 +1,7 @@
 aiogram
+rich
+trimesh
+kornia
+diffusers
+transformers
+accelerate
