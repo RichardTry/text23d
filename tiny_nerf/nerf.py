@@ -251,7 +251,7 @@ def train(
                 progress.update(epochs_task, advance=1)
             torch.save(nerf_model.state_dict(), model_save_path)
 
-    for img_index in range(128):
+    for img_index in range(len(testing_dataset)):
         test(nerf_model, hn, hf, testing_dataset, chunk_size=1024,
-       img_index=img_index, nb_bins=nb_bins, H=H, W=W)
+        img_index=img_index, nb_bins=nb_bins, H=H, W=W)
     return training_loss
