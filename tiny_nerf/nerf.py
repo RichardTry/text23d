@@ -34,7 +34,7 @@ def test(model, hn, hf, dataset, chunk_size=10, img_index=0, nb_bins=192, H=400,
     Returns:
         None: None
     """
-    device = "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("novel_views", exist_ok=True)
     data = []  # list of regenerated pixel values
     example = dataset[img_index]
@@ -93,7 +93,6 @@ class NerfModel(nn.Module):
 
     @staticmethod
     def positional_encoding(x, L):
-        print('NerfModel positional_encoding')
         out = [x]
         for j in range(L):
             out.append(torch.sin(2**j * x))
@@ -101,7 +100,6 @@ class NerfModel(nn.Module):
         return torch.cat(out, dim=1)
 
     def forward(self, o, d):
-        print('NerfModel forward')
         emb_x = self.positional_encoding(
             o, self.embedding_dim_pos
         )  # emb_x: [batch_size, embedding_dim_pos * 6]
@@ -109,11 +107,9 @@ class NerfModel(nn.Module):
             d, self.embedding_dim_direction
         )  # emb_d: [batch_size, embedding_dim_direction * 6]
         h = self.block1(emb_x)  # h: [batch_size, hidden_dim]
-        print('TUUUUUUT 11111')
         tmp = self.block2(
             torch.cat((h, emb_x), dim=1)
         )  # tmp: [batch_size, hidden_dim + 1]
-        print('TUUUUUUT 22222')
         h, sigma = tmp[:, :-1], self.relu(
             tmp[:, -1]
         )  # h: [batch_size, hidden_dim], sigma: [batch_size]
@@ -176,7 +172,6 @@ def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=1
     ray_directions = ray_directions.expand(nb_bins, ray_directions.shape[0], 3).transpose(
         0, 1
     )
-    print(x.reshape(-1, 3).shape, ray_directions.reshape(-1, 3).shape)
     colors, sigma = nerf_model(x.reshape(-1, 3), ray_directions.reshape(-1, 3))
     colors = colors.reshape(x.shape)
     sigma = sigma.reshape(x.shape[:-1])
@@ -185,9 +180,9 @@ def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=1
         2
     )
     # Compute the pixel values as a weighted sum of colors along each ray
-    c = (weights * colors).sum(dim=1)
+    c = (weights * colors).sum(dim=1).to(device)
     weight_sum = weights.sum(-1).sum(-1)  # Regularization for white background
-    return c + 1 - weight_sum.unsqueeze(-1)
+    return c + 1 - weight_sum.unsqueeze(-1).to(device)
 
 
 def train(
@@ -196,8 +191,9 @@ def train(
     optimizer,
     scheduler,
     data_loader,
+    testing_dataset,
     guidance,
-    device="cpu",
+    device="cuda",
     hn=0,
     hf=1,
     nb_epochs=int(1e5),
@@ -255,7 +251,7 @@ def train(
                 progress.update(epochs_task, advance=1)
             torch.save(nerf_model.state_dict(), model_save_path)
 
-    # for img_index in range(200):
-    #    test(nerf_model, hn, hf, testing_dataset, chunk_size=1024,
-    #    img_index=img_index, nb_bins=nb_bins, H=H, W=W)
+    for img_index in range(128):
+        test(nerf_model, hn, hf, testing_dataset, chunk_size=1024,
+       img_index=img_index, nb_bins=nb_bins, H=H, W=W)
     return training_loss
