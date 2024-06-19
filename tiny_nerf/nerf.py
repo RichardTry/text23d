@@ -176,19 +176,14 @@ def render_rays(nerf_model, ray_origins, ray_directions, hn=0, hf=0.5, nb_bins=1
     ray_directions = ray_directions.expand(nb_bins, ray_directions.shape[0], 3).transpose(
         0, 1
     )
-    print('HERE 1')
     print(x.reshape(-1, 3).shape, ray_directions.reshape(-1, 3).shape)
     colors, sigma = nerf_model(x.reshape(-1, 3), ray_directions.reshape(-1, 3))
-    print('HERE 1.2')
     colors = colors.reshape(x.shape)
-    print('HERE 1.3')
     sigma = sigma.reshape(x.shape[:-1])
-    print('HERE 2')
     alpha = 1 - torch.exp(-sigma * delta)  # [batch_size, nb_bins]
     weights = compute_accumulated_transmittance(1 - alpha).unsqueeze(2) * alpha.unsqueeze(
         2
     )
-    print('HERE 3')
     # Compute the pixel values as a weighted sum of colors along each ray
     c = (weights * colors).sum(dim=1)
     weight_sum = weights.sum(-1).sum(-1)  # Regularization for white background
