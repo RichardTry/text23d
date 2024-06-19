@@ -1,6 +1,6 @@
 import asyncio
 
-import torch.cuda
+# import torch.cuda
 import torch
 from rich.console import Console
 from torch.utils.data import DataLoader
@@ -21,7 +21,6 @@ async def run(prompt: str):
     )
     print(f"Training {prompt}...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Device: {device}")
     height = width = 32
     # The smaller the images the faster the training and evaluation
     batch_size = 8  # If running out of memory reduce this
@@ -32,6 +31,8 @@ async def run(prompt: str):
     console.print(f"Using {max_frames} images and running for {nb_epochs} epochs")
 
     training_dataset = CameraDataset(label="train", samples=128, H=height, W=width)
+    testing_dataset = CameraDataset(label="test", samples=128, H=height, W=width)
+
 
     model = NerfModel(hidden_dim=256).to(device)
     model_optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
@@ -46,7 +47,7 @@ async def run(prompt: str):
         model_optimizer,
         scheduler,
         data_loader,
-        # testing_dataset,
+        testing_dataset,
         guidance=sd_guidance,
         nb_epochs=nb_epochs,
         device=device,
